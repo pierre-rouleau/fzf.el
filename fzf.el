@@ -144,8 +144,8 @@ invoked with prefix arguments, for example by typing 'C-u M-x fzf'.
 
 Several choices are available:
 
-- 1: Show file's content with \"--preview 'cat {}'\" by default.
-- 2: Show information about the file with \"--preview 'file {}'\" by default.
+- 1: Show file's content with \"--preview \\='cat {}\\='\" by default.
+- 2: Show information about the file with \"--preview \\='file {}\\='\" by default.
 - 3: Show ls output for the file.
 - 4: Show word count output on the file.
 - 5: any other argument.
@@ -168,7 +168,7 @@ Notes:
   :group 'fzf)
 
 (defcustom fzf/grep-command "grep -nrH"
-  "Recursive grep-like command line used for `fzf-grep-*` functions.
+  "Recursive grep-like command line used for `fzf-grep-*' functions.
 
 Identifies a command line that searches in a directory tree and
 produces a set of matching line that must all follow the format
@@ -177,9 +177,9 @@ which is: <FILE>:<LINE NUMBER>:<text>.
 
 The following options are available:
 
-- 1: use grep with 'grep -rnH' by default,
-- 2: use ripgrep with 'rg --no-heading --color never --line-number' by
-    default,
+- 1: use grep with \\='grep -rnH\\=' by default,
+- 2: use ripgrep with \\='rg --no-heading --color never --line-number\\='
+     by default,
 - 3: something else, entirely specified in the option.
      Nothing is specified here; You must fill the command line.
 
@@ -411,7 +411,7 @@ The ANSI color sequences are filtered when Emacs runs in termcap mode."
 ;; Awkward internal, global variable to save the reference to the
 ;; 'term-handle-exit hook so it can be deleted
 (defvar fzf--hook nil
-  "Remembers 'term-handle-exit hook to allow its later deletion.")
+  "Remembers `term-handle-exit' hook to allow its later deletion.")
 
 ;; Internal helper function
 (defun fzf--close()
@@ -550,7 +550,8 @@ The returned lambda requires extra context information:
     ;;       to allow compatibility with more minor modes instead of using
     ;;       this hard coded set.
     (and (fboundp 'turn-off-evil-mode) (turn-off-evil-mode))
-    (when (bound-and-true-p linum-mode)
+    (when (and (fboundp 'linum-mode)
+               (bound-and-true-p linum-mode))
       (linum-mode 0))
     (when (bound-and-true-p visual-line-mode)
       (visual-line-mode 0))
@@ -781,7 +782,7 @@ Example usage:
 (defun fzf--action-goto-line (target)
   "Extract line number from TARGET then jump to that line.
 
-TARGET is a line produced by 'cat -n'."
+TARGET is a line produced by \\='cat -n\\='."
   (let ((parts (split-string (string-trim-left target) " ")))
     (goto-char (point-min))
     (forward-line (1- (string-to-number (nth 0 parts))))))
@@ -854,13 +855,13 @@ to use other mechanisms."
 - SEARCH is the end of the grep command line;  typically holding the regexp
   identifying what to search and the glob pattern to identify the file that
   must be searched.  If SEARCH is nil, read input interactively.
-- Grep in `fzf--resolve-directory` using DIRECTORY if provided.
+- Grep in `fzf--resolve-directory' using DIRECTORY if provided.
 - If AS-FILTER is non-nil, use grep as the narrowing filter instead of fzf.
 
 File name & Line extraction:
 
 - By default this function extracts file name and line number
-  using the '(fzf--file-lnum-regexp 1 2) extraction list.
+  using the \\='(fzf--file-lnum-regexp 1 2) extraction list.
 
   If the grep command you use requires a different extraction
   rule, then let bind a `fzf-extractor-list' variable to a list
@@ -868,7 +869,7 @@ File name & Line extraction:
   context of `fzf-grep' (or the function that calls it).
 
   - IMPORTANT: the name of that let-bound variable must have only
-    one dash after 'fzf'!  It's not the same as the internal
+    one dash after `fzf'!  It's not the same as the internal
     `fzf--extractor-list' variable!"
   (interactive)
   (let* ((fzf--target-validator (fzf--use-validator
@@ -981,8 +982,8 @@ note applies here."
 (defun fzf--vcs (vcs-name root-filename)
   "Run FZF in the VCS-NAME directory holding ROOT-FILENAME."
   (let ((fzf--target-validator (fzf--use-validator
-                                (function fzf--validate-filename)))
-        (path (locate-dominating-file default-directory root-filename)))
+                                 (function fzf--validate-filename)))
+         (path (locate-dominating-file default-directory root-filename)))
     (if path
         (fzf--start path (function fzf--action-find-file))
       (user-error "Not inside a %s repository" vcs-name))))
@@ -1016,18 +1017,18 @@ Only search files that have been committed."
 (defun fzf-git-grep ()
   "Grep files committed in Git repo, fzf search result.
 
-Use 'git grep' in the current Git repository to grep into the
+Use \\='git grep\\=' in the current Git repository to grep into the
 files that have been committed into Git. Then execute fzf to
 fuzzy search into the files/lines found.  Open the selected file
 at the specific line.
 
 Note that git grep *does not* grep into all past revisions of a
-Git repo committed files (the way Mercurial 'hg grep' does).
+Git repo committed files (the way Mercurial \\='hg grep\\=' does).
 This command only greps in the *current* version of the files.
 
 - With Git, looking into the history is more involved and requires
-  using several commands: 'git log -S' to identify the
-  'version' (commit-sha) and then a grep on each of these.
+  using several commands: \\='git log -S\\=' to identify the
+  version (commit-sha) and then a grep on each of these.
 
 See note about file & line extraction in `fzf-grep'.
 The same note applies here."
@@ -1068,7 +1069,7 @@ Perform fzf search on the result and open selection.
 File name & Line extraction:
 
 - By default this function extracts file name and line number
-  using the '(fzf--file-rnum-lnum-regexp 1 3) extraction list.
+  using the \\='(fzf--file-rnum-lnum-regexp 1 3) extraction list.
 
   If the grep command you use requires a different extraction
   rule, then let bind a `fzf-extractor-list' variable to a list
@@ -1076,7 +1077,7 @@ File name & Line extraction:
   context of `fzf-grep' (or the function that calls it).
 
   - IMPORTANT: the name of that let-bound variable must have only
-    one dash after 'fzf'!  It's not the same as the internal
+    one dash after \\='fzf'!  It's not the same as the internal
     `fzf--extractor-list' variable!"
   (interactive "P")
   ;; TODO : add ability to select revision range interactively
