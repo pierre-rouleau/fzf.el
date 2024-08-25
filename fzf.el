@@ -95,6 +95,22 @@
 ;; 'fzf', not two.  The `fzf-grep', `fzf-git-grep' and `fzf-hg-grep' use that
 ;; variable instead of the default one if it is bound.
 
+;; Position and size of the window used by fzf
+;; -------------------------------------------
+;;
+;; The following user options control the size and position of the window used
+;; by fzf.  That window is temporary, created while fzf runs, and is destroyed
+;; once fzf is stopped.
+;;
+;; - fzf/window-height:            The required height of the fzf window.
+;; - fzf/position-bottom:          Whether the fzf window is the bottom or
+;;                                 top half of the current window that is
+;;                                 split.
+;; - fzf/position-bottom-of-frame: If t, force using bottom half of the
+;;                                 bottom-most window.  If that window is too
+;;                                 small, use a bottom root window.
+;; - fzf/use-bottom-root-window:   If t, always use a root window at the
+;;                                 bottom of the current frame.
 
 ;;
 ;; Naming conventions
@@ -115,11 +131,6 @@
 (defgroup fzf nil
   "Configuration options for fzf.el"
   :group 'convenience)
-
-(defcustom fzf/window-height 15
-  "The window height of the fzf buffer"
-  :type 'integer
-  :group 'fzf)
 
 (defcustom fzf/executable "fzf"
   "The name of the fzf executable.
@@ -238,19 +249,36 @@ If nil, fzf prompts have the same history in all modes."
   :safe #'booleanp
   :group 'fzf)
 
+(defcustom fzf/window-height 15
+  "The window height of the fzf buffer"
+  :type 'integer
+  :group 'fzf)
+
 (defcustom fzf/position-bottom t
   "Set the position of the fzf window. Set to nil to position on top."
   :type 'boolean
   :safe #'booleanp
   :group 'fzf)
 
-(defconst fzf/buffer-name "*fzf*"
-  "The name of the fzf buffer")
+(defcustom fzf/position-bottom-of-frame nil
+  "Set the position of the fzf to always be at the bottom of the frame."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'fzf)
+
+(defcustom fzf/use-bottom-root-window nil
+  "Set the fzf into a root window at the bottom of current frame."
+  :type 'boolean
+  :safe #'booleanp
+  :group 'fzf)
 
 (defcustom fzf/directory-start nil
   "The path of the default start directory for fzf-directory."
   :type 'string
   :group 'fzf)
+
+(defconst fzf/buffer-name "*fzf*"
+  "The name of the fzf buffer")
 
 ;; ---------------------------------------------------------------------------
 ;; Public variables
@@ -512,6 +540,15 @@ The returned lambda requires extra context information:
 (defvar term-exec-hook)               ; prevent byte-compiler warning
 (defvar term-suppress-hard-newline)   ; prevent byte-compiler warning
 
+
+;; Internal helper function
+(defun fzf--move-to-bottom-window ()
+  "Move point to the bottom-most window of the current frame"
+  (condition-case nil
+      (while 1
+        (windmove-down 0))
+    (error nil)))
+
 ;; Internal helper function
 (defun fzf--start (directory action &optional custom-args)
   "Launch `fzf/executable' in terminal, extract and act on selected item."
@@ -533,14 +570,26 @@ The returned lambda requires extra context information:
                                                   fzf--extractor-list))
   (let* ((term-exec-hook nil)
          (buf (get-buffer-create fzf/buffer-name))
-         (min-height (min fzf/window-height (/ (window-height) 2)))
+         (min-height (min fzf/window-height
+                          (/ (progn (when fzf/position-bottom-of-frame
+                                      (fzf--move-to-bottom-window))
+                                    (window-height))
+                             2)))
          (window-height (if fzf/position-bottom (- min-height) min-height))
          (args (or custom-args fzf/args))
          (sh-cmd (concat fzf/executable " " args)))
     (with-current-buffer buf
       (setq default-directory (or directory "")))
-    (split-window-vertically window-height)
-    (when fzf/position-bottom (other-window 1))
+    (message "window-height = %d, fzf/window-height=%s" window-height fzf/window-height)
+    (if (and  (>= (abs window-height) fzf/window-height)
+              (not fzf/use-bottom-root-window))
+        (progn
+          (split-window-vertically window-height)
+          (when fzf/position-bottom (other-window 1)))
+      (split-window (frame-root-window) nil 'below)
+      (fzf--move-to-bottom-window))
+    (when (> (window-height) fzf/window-height)
+        (enlarge-window (- fzf/window-height (window-height))))
     (make-term (file-name-nondirectory fzf/executable)
                "sh" nil "-c" sh-cmd)
     (switch-to-buffer buf)
