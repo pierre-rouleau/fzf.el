@@ -12,6 +12,10 @@ Below is an illustrative `use-package` configuration of `fzf.el` showing all
 available customizations and their default values.
 
 > **Note**: This package does not set default keybindings.
+> **Note**: This fork is ahead of bling's fzf and incorporate new features.
+            I would like to merge, but something's wrong with the Git status
+            and I'm unfortunately too busy to look into Git to figure out
+            what is wrong.
 
 ```lisp
 (use-package fzf
