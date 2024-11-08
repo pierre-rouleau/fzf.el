@@ -1,6 +1,6 @@
 ;;; fzf.el --- A front-end for fzf. -*- lexical-binding: t; -*-
 ;;
-;; Copyright (C) 2015 by Bailey Ling
+;; Copyright (C) 2015, 2024 by Bailey Ling
 ;; Author: Bailey Ling
 ;; URL: https://github.com/bling/fzf.el
 ;; Filename: fzf.el
@@ -1036,20 +1036,20 @@ note applies here."
 ;; Internal helper function
 (defun fzf--vcs (vcs-name root-filename)
   "Run FZF in the VCS-NAME directory holding ROOT-FILENAME."
-  (let ((fzf--target-validator (fzf--use-validator
+  (let* ((fzf--target-validator (fzf--use-validator
                                  (function fzf--validate-filename)))
-         (path (locate-dominating-file (file-truename default-directory)
-                                       root-filename)))
+         (current-directory (file-truename default-directory)) ;; resolve symlinks
+         (path (locate-dominating-file current-directory root-filename)))
     (if path
         (fzf--start path (function fzf--action-find-file))
       (user-error "Not inside a %s repository" vcs-name))))
 
 (defun fzf--vcs-command (vcs-name root-filename command)
   "Run FZF specific COMMAND in the VCS-NAME directory holding ROOT-FILENAME."
-  (let ((fzf--target-validator (fzf--use-validator
-                                (function fzf--validate-filename)))
-        (path (locate-dominating-file (file-truename default-directory)
-                                      root-filename)))
+  (let* ((fzf--target-validator (fzf--use-validator
+                                 (function fzf--validate-filename)))
+         (current-directory (file-truename default-directory)) ;; resolve symlinks
+         (path (locate-dominating-file current-directory root-filename)))
     (if path
         (fzf-with-command command (function fzf--action-find-file) path)
       (user-error "Not inside a %s repository" vcs-name))))
