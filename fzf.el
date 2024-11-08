@@ -668,9 +668,10 @@ the file name validation.  See `fzf--validate-filename' and
 (defun fzf (&optional with-preview)
   "Starts a fzf session in the appropriate directory.
 
-By default this process the current working directory unless this is inside a
-Projectile project in which case the root directory of the Projectile project
-is used.
+Launch a fzf file search on a directory root.
+Prompts for the directory root, providing a default that is:
+- the projectile project root if projectile is used, otherwise
+- the current working directory as default.
 
 With optional prefix WITH-PREVIEW the currently selected file
 content or attribute is shown using the preview command
@@ -795,8 +796,10 @@ to use other mechanisms."
 (defun fzf--resolve-directory (&optional directory)
   "Identify and return directory to perform fzf search.
 
-Return DIRECTORY if specified, the projectile project root if
-projectile is used otherwise return the current working directory.
+Return DIRECTORY if specified and valid, otherwise prompt
+for the directory with a default, which is:
+- the projectile project root if projectile is used, otherwise
+- the current working directory.
 
 Example usage:
 
@@ -804,12 +807,15 @@ Example usage:
     (fzf  (lambda (x) (print x))
           (fzf--resolve-directory directory)))"
   (cond
-   (directory directory)
-   ((fboundp 'projectile-project-root)
-    (condition-case nil
-        (projectile-project-root)
-      (error default-directory)))
-   (t default-directory)))
+   ((and directory (file-directory-p directory)) directory)
+   (t
+    (read-directory-name
+     "fzf Search root: "
+     (if (fboundp 'projectile-project-root)
+         (condition-case nil
+             (projectile-project-root)
+           (error default-directory))
+       default-directory)))))
 
 ;; ---------------------------------------------------------------------------
 ;; Operations on Buffers
