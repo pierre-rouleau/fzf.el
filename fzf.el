@@ -810,7 +810,7 @@ Example usage:
    ((and directory (file-directory-p directory)) directory)
    (t
     (read-directory-name
-     "fzf Search root: "
+     "fzf from: "
      (if (fboundp 'projectile-project-root)
          (condition-case nil
              (projectile-project-root)
