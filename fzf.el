@@ -1,6 +1,6 @@
 ;;; fzf.el --- A front-end for fzf. -*- lexical-binding: t; -*-
 ;;
-;; Copyright (C) 2015, 2024 by Bailey Ling
+;; Copyright (C) 2015, 2024, 2025 by Bailey Ling
 ;; Author: Bailey Ling
 ;; URL: https://github.com/bling/fzf.el
 ;; Filename: fzf.el
@@ -150,8 +150,8 @@ write the absolute path of the executable to use."
 
 The extra arguments identified by this user-option are appended
 to the fzf command line used by the `fzf', `fzf-directory',
-`fzf-projectile` and `fzf-recentf' Emacs commands when those are
-invoked with prefix arguments, for example by typing 'C-u M-x fzf'.
+`fzf-projectile' and `fzf-recentf' Emacs commands when those are
+invoked with prefix arguments, for example by typing \\='C-u M-x fzf\\='.
 
 Several choices are available:
 
@@ -415,6 +415,7 @@ file pattern specified by `fzf/grep-file-pattern'."
 The ANSI color sequences are filtered when Emacs runs in termcap mode."
   (unless (display-graphic-p)
     (require 'ansi-color)
+    (declare-function ansi-color-filter-region "ansi-color")
     (ansi-color-filter-region region-begin region-end))
   (buffer-substring-no-properties region-begin region-end))
 
