@@ -554,6 +554,14 @@ The returned lambda requires extra context information:
 (defun fzf--start (directory action &optional custom-args)
   "Launch `fzf/executable' in terminal, extract and act on selected item."
   (require 'term)
+  ;; if directory is not specified in any in `fzf--start' caller's caller
+  ;; it will be set to nil.  As a protective measure, Use the
+  ;; `default-directory' in that case.  Also don't allow the empty string,
+  ;; even if `file-directory-p' considers it valid.
+  ;; The code assumes that `default-directory' is not the empty string.
+  (when (or (not directory)
+            (string= directory ""))
+    (setq directory default-directory))
 
   ;; Clean up existing fzf, allowing multiple action types.
   (fzf--close)
@@ -580,7 +588,7 @@ The returned lambda requires extra context information:
          (args (or custom-args fzf/args))
          (sh-cmd (concat fzf/executable " " args)))
     (with-current-buffer buf
-      (setq default-directory (or directory "")))
+      (setq default-directory directory))
     (message "window-height = %d, fzf/window-height=%s" window-height fzf/window-height)
     (if (and  (>= (abs window-height) fzf/window-height)
               (not fzf/use-bottom-root-window))
@@ -590,7 +598,7 @@ The returned lambda requires extra context information:
       (split-window (frame-root-window) nil 'below)
       (fzf--move-to-bottom-window))
     (when (> (window-height) fzf/window-height)
-        (enlarge-window (- fzf/window-height (window-height))))
+      (enlarge-window (- fzf/window-height (window-height))))
     (make-term (file-name-nondirectory fzf/executable)
                "sh" nil "-c" sh-cmd)
     (switch-to-buffer buf)
