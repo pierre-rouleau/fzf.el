@@ -132,6 +132,11 @@
   "Configuration options for fzf.el"
   :group 'convenience)
 
+(defcustom fzf/window-height 15
+  "The window height of the fzf buffer"
+  :type 'integer
+  :group 'fzf)
+
 (defcustom fzf/executable "fzf"
   "The name of the fzf executable.
 
@@ -249,11 +254,6 @@ If nil, fzf prompts have the same history in all modes."
   :safe #'booleanp
   :group 'fzf)
 
-(defcustom fzf/window-height 15
-  "The window height of the fzf buffer"
-  :type 'integer
-  :group 'fzf)
-
 (defcustom fzf/position-bottom t
   "Set the position of the fzf window. Set to nil to position on top."
   :type 'boolean
@@ -272,13 +272,20 @@ If nil, fzf prompts have the same history in all modes."
   :safe #'booleanp
   :group 'fzf)
 
-(defcustom fzf/directory-start nil
-  "The path of the default start directory for fzf-directory."
-  :type 'string
+(defcustom fzf/start-verbose  t
+  "When non-nil a fzf command displays window height info.
+Set to nil to prevent the message."
+  :type 'boolean
+  :safe #'booleanp
   :group 'fzf)
 
 (defconst fzf/buffer-name "*fzf*"
   "The name of the fzf buffer")
+
+(defcustom fzf/directory-start nil
+  "The path of the default start directory for fzf-directory."
+  :type 'string
+  :group 'fzf)
 
 ;; ---------------------------------------------------------------------------
 ;; Public variables
@@ -485,9 +492,9 @@ error:
     ;; we're in a handler we can't interrupt and provides a better trace.
     (when (or (string= "" target)
               (not (file-exists-p target)))
-      (message "TERMINATING: process:[%s], msg:[%s]" process-name msg )
-      (message "FZF PROBLEM: non existing file identified [%s]" orig-target)
-      (message "FZF returned text: [%s]" text))
+      (message "TERMINATING: process:[%s], msg:[%s]
+- FZF PROBLEM: non existing file identified [%s]
+- FZF returned text: [%s]" process-name msg orig-target text))
     ;; return potentially adjusted file name
     target))
 
@@ -544,7 +551,7 @@ The returned lambda requires extra context information:
 
 ;; Internal helper function
 (defun fzf--move-to-bottom-window ()
-  "Move point to the bottom-most window of the current frame"
+  "Move point to the bottom-most window of the current frame."
   (condition-case nil
       (while 1
         (windmove-down 0))
@@ -554,15 +561,16 @@ The returned lambda requires extra context information:
 (defun fzf--start (directory action &optional custom-args)
   "Launch `fzf/executable' in terminal, extract and act on selected item."
   (require 'term)
+  ;; [:todo 2026-01-11, by Pierre Rouleau: Investigate further.
+  ;;   See: https://github.com/bling/fzf.el/issues/124 ]
   ;; if directory is not specified in any in `fzf--start' caller's caller
-  ;; it will be set to nil.  As a protective measure, Use the
+  ;; it will be set to nil.  As a protective measure, use the
   ;; `default-directory' in that case.  Also don't allow the empty string,
   ;; even if `file-directory-p' considers it valid.
   ;; The code assumes that `default-directory' is not the empty string.
-  (when (or (not directory)
-            (string= directory ""))
-    (setq directory default-directory))
-
+  ;; (when (or (not directory)
+  ;;           (string= directory ""))
+  ;;   (setq directory default-directory))
   ;; Clean up existing fzf, allowing multiple action types.
   (fzf--close)
 
@@ -587,9 +595,14 @@ The returned lambda requires extra context information:
          (window-height (if fzf/position-bottom (- min-height) min-height))
          (args (or custom-args fzf/args))
          (sh-cmd (concat fzf/executable " " args)))
+    ;; [:todo 2026-01-11, by Pierre Rouleau: Investigate further.
+    ;;   See: https://github.com/bling/fzf.el/issues/124 ]
     (with-current-buffer buf
-      (setq default-directory directory))
-    (message "window-height = %d, fzf/window-height=%s" window-height fzf/window-height)
+      (setq default-directory (or directory "")))
+    (when fzf/start-verbose
+      (message "window-height = %d, fzf/window-height=%s" window-height
+               fzf/window-height))
+    ;; setup window for the terminal
     (if (and  (>= (abs window-height) fzf/window-height)
               (not fzf/use-bottom-root-window))
         (progn
@@ -599,10 +612,12 @@ The returned lambda requires extra context information:
       (fzf--move-to-bottom-window))
     (when (> (window-height) fzf/window-height)
       (enlarge-window (- fzf/window-height (window-height))))
+    ;;
     (make-term (file-name-nondirectory fzf/executable)
                "sh" nil "-c" sh-cmd)
     (switch-to-buffer buf)
 
+    ;; --
     ;; Disable minor modes that interfere with rendering while fzf is running
     ;; TODO: provide ability to modify the set of actions in the user-option
     ;;       to allow compatibility with more minor modes instead of using
@@ -935,7 +950,7 @@ File name & Line extraction:
   context of `fzf-grep' (or the function that calls it).
 
   - IMPORTANT: the name of that let-bound variable must have only
-    one dash after `fzf'!  It's not the same as the internal
+    one dash after \\='fzf\\='!  It's not the same as the internal
     `fzf--extractor-list' variable!"
   (interactive)
   (let* ((fzf--target-validator (fzf--use-validator
