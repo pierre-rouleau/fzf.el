@@ -615,13 +615,15 @@ The returned lambda requires extra context information:
       (visual-line-mode 0))
     (when (bound-and-true-p display-line-numbers-mode)
       (display-line-numbers-mode 0))
-    ;; disable various settings known to cause artifacts, see #1 for more details
-    (setq-local scroll-margin 0)
-    (setq-local scroll-conservatively 0)
-    (setq-local term-suppress-hard-newline t)
-    (setq-local show-trailing-whitespace nil)
-    (setq-local display-line-numbers nil)
-    (setq-local truncate-lines t)
+    ;; disable various settings known to cause artifacts, see #1 for more
+    ;; details
+    (with-no-warnings
+      (setq-local scroll-margin 0)
+      (setq-local scroll-conservatively 0)
+      (setq-local term-suppress-hard-newline t)
+      (setq-local show-trailing-whitespace nil)
+      (setq-local display-line-numbers nil)
+      (setq-local truncate-lines t))
     (face-remap-add-relative 'mode-line '(:box nil))
 
     (and (fboundp 'term-char-mode) (term-char-mode))
